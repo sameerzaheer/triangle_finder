@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 2.8)
+project( triangle_finder )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+set(SOURCES triangle_finder.cpp segmentation.cpp)
+add_executable( triangle_finder ${SOURCES})
+target_link_libraries( triangle_finder ${OpenCV_LIBS} )
