@@ -43,14 +43,19 @@ void mask_threshold(Mat input, Mat mask, uint8_t threshold, uint8_t mask_val){
   }
 }
 
-void inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
+/*
+  Returns the point inpaint that is farthest from c_start.
+ */
+coord inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
   assert(input.channels() == 1);
   assert(replace_val != paint_val);
   uint8_t* input_ptr = (uint8_t*)input.data;
+  float farthest_dist =0;
+  coord farthest_pt;
   queue<coord> q;
   q.push(c_start);
   input_ptr[c_start.y*input.cols + c_start.x] = paint_val;
-  struct timespec remaining, request = { 2, 1 };
+  //struct timespec remaining, request = { 2, 1 };
 
   while (!q.empty()){
     coord c = q.front(); q.pop();
@@ -67,12 +72,16 @@ void inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
           input_ptr[y*input.cols + x] = paint_val;
           //cout << x << " " << y <<  endl;
           q.emplace(x,y);
+          float dist_sq = c_start.dist_sq(x,y);
+          if (dist_sq > farthest_dist){
+            farthest_dist = dist_sq;
+            farthest_pt.x = x; farthest_pt.y = y;
+          }
         }
       }
-    } //end while
-
-  }
-
+    }
+  } //end while
+  return farthest_pt;
 }
 /*Segments an input mask by changing the labels of the pixels to:
  90: for background
@@ -82,10 +91,13 @@ void inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
  If an object is filled with background, then it is filled in with same label as its edges.
  If an object has an object inside it, then the inside object has a separate label.
  Pixel (0,0) is assumed to be background.
+
+ Returns the coord anchors of each shape (at the top left hand corner).
 */
 
-void mask_segmentation(Mat input, uint8_t foreground){
+vector<shape> mask_segmentation(Mat input, uint8_t foreground){
   assert(input.channels() == 1);
+  vector<shape> shapes;
   //First segment the background
   coord bkgrnd_c = (coord){0,0};
   uint8_t bkgrnd_val = input.at<uint8_t>(bkgrnd_c.y,bkgrnd_c.x);
@@ -98,7 +110,10 @@ void mask_segmentation(Mat input, uint8_t foreground){
   for(int y = 0; y < input.rows; y++){
     for(int x = 0; x < input.cols; x++){
       if (input_ptr[y*input.cols + x] == foreground){
-        inpaint(input,(coord){x,y}, foreground, mask_label);
+        coord vertex_2nd = inpaint(input,(coord){x,y}, foreground, mask_label);
+        shapes.emplace_back((coord){x,y});
+        shapes.back().add(vertex_2nd);
+        shapes.back().code = mask_label;
         mask_label+=10;
       } else if (input_ptr[y*input.cols + x] == bkgrnd_val){
         //Check for adjacent non-background pixel.
@@ -120,14 +135,8 @@ void mask_segmentation(Mat input, uint8_t foreground){
       }
     }
   }
-
-
   cout << "done segmentation" << endl;
-
+  return shapes; //should move it out
 }
 
-//Inspired by http://users.utcluj.ro/~ancac/Resurse/PI/PI-L6e.pdf
-void border_tracing(){
-
-}
 
