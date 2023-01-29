@@ -99,7 +99,7 @@ vector<shape> mask_segmentation(Mat input, uint8_t foreground){
   assert(input.channels() == 1);
   vector<shape> shapes;
   //First segment the background
-  coord bkgrnd_c = (coord){0,0};
+  coord bkgrnd_c = (coord){BACKGROUND_X,BACKGROUND_Y};
   uint8_t bkgrnd_val = input.at<uint8_t>(bkgrnd_c.y,bkgrnd_c.x);
   uint8_t mask_label = 90;
 
@@ -136,7 +136,7 @@ vector<shape> mask_segmentation(Mat input, uint8_t foreground){
     }
   }
   cout << "done segmentation" << endl;
-  return shapes; //should move it out
+  return shapes; 
 }
 
 

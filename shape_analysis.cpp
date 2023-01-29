@@ -12,6 +12,31 @@
 using namespace cv;
 using namespace std;
 
+
+//Given the segmented mask, and a list of shapes, this function
+//analyzes finds its vertices, whether it is a triangle, if so what
+//type, what is its area and creates its edges.
+void analyze_shapes(vector<shape> &shapes, Mat image){
+  int triangle_num = 0;
+  for(shape &s : shapes){
+//    cout << "Shape: " << (int)s.code << endl;
+    s.vertices.push_back(find_third_vertex(s,image));
+    s.is_triangle = is_triangle(s,image);
+    if (!s.is_triangle) continue;
+    s.index = ++triangle_num;
+    s.lowest_vertex_index = (s.vertices[2].y > s.vertices[1].y) ?
+      (s.vertices[2].y > s.vertices[0].y ? 2 : 0):
+      (s.vertices[1].y > s.vertices[0].y ? 1 : 0);
+    s.average_x = (int)((s.vertices[0].x +
+                         s.vertices[1].x +
+                         s.vertices[2].x)*0.33);
+    create_edges(s);
+    s.triangle_type = classify_triangle_type(s);
+    s.area = compute_triangle_area(s);
+  }
+}
+
+
 //Inspired by http://users.utcluj.ro/~ancac/Resurse/PI/PI-L6e.pdf
 //void border_tracing(){
   //Comment, I was going to implement this border tracing method and use it find edges and vertices. But then I found an easier method and decided to take advantage of that. :-)
@@ -97,15 +122,85 @@ coord find_third_vertex_efficient(shape s, Mat image){
   return c_pt;
 }
 
-// Classifies the shape by looking at the midpoint
-// Assumes the 2nd vertex is the point in the shape that is farthest from 1st point.
-//
+// Determines if shape is a triangle by ensuring that every edge is filled
+// on one and only one side.
 
-shape::shape_type classify_shape(shape s, Mat image){
+bool is_triangle(shape s, Mat image){
   assert(s.vertices.size() >=3); //otherwise not enough info
-  
-  return shape::line;
+  if (classify_edge(s.vertices[0], s.vertices[1], s.code, image) == one_filled &&
+      classify_edge(s.vertices[1], s.vertices[2], s.code, image) == one_filled &&
+      classify_edge(s.vertices[0], s.vertices[2], s.code, image) == one_filled){
+    return true;
+  } else {
+    return false;
+  }
 }
 
+vector<coord> dbg_vertices;
+
+// Given two points, determines whether the line formed by them is contains the shape
+// on no side (enum line), one side (enum triangle), or both sides (enum more_than_three).
+// This is done by checking the pixels on both sides of the edge. See Explanation #5 in doc.
+edge_type classify_edge(coord pt1, coord pt2, uint8_t code, Mat image){
+  coord mid_pt = (pt1+pt2)*0.5;
+  float dir_x = pt2.y-pt1.y;
+  float dir_y = pt1.x-pt2.x;
+  float magnitude = MAXIMUM_WIDTH_OF_LINE / pow(dir_x*dir_x + dir_y*dir_y,0.5);
+  coord offset = (coord){(int)round(dir_x * magnitude),
+                         (int)round(dir_y * magnitude)};
+  coord right_pt = mid_pt + offset;
+  coord left_pt  = mid_pt - offset;
+  //cout << "Code: " << (int)code << " Right pt: " << right_pt << " Left pt: " << left_pt << endl;
+  //cout << (int)image.at<uchar>(right_pt.y,right_pt.x) << " " << (int)image.at<uchar>(left_pt.y,left_pt.x) << endl;
+  //dbg_vertices.push_back(right_pt);
+  //dbg_vertices.push_back(left_pt);
+
+  if (image.at<uchar>(right_pt.y,right_pt.x) == code &&
+      image.at<uchar>(left_pt.y, left_pt.x)  == code){
+    return both_filled;
+  } else if (image.at<uchar>(right_pt.y,right_pt.x) != code &&
+             image.at<uchar>(left_pt.y, left_pt.x)  != code){
+    return none_filled;
+  } else {
+    return one_filled;
+  }
+}
+
+void create_edges(shape &s){
+  assert(s.vertices.size() == 3);
+  s.edges.emplace_back(0,&(s.vertices[0]),&(s.vertices[1]),
+                       (s.vertices[0]+s.vertices[1])*0.5, s.vertices[0].dist(s.vertices[1]));
+  s.edges.emplace_back(1,&(s.vertices[1]),&(s.vertices[2]),
+                       (s.vertices[1]+s.vertices[2])*0.5, s.vertices[1].dist(s.vertices[2]));
+  s.edges.emplace_back(2,&(s.vertices[0]),&(s.vertices[2]),
+                       (s.vertices[0]+s.vertices[2])*0.5, s.vertices[0].dist(s.vertices[2]));
+}
+
+//Determine if the triangle is equilateral, isosceles or scalene
+shape::triangle_types classify_triangle_type(shape s){
+  assert(s.edges.size() == 3);
+  if      (abs(s.edges[0].length - s.edges[1].length) <= MARGIN_OF_ERROR &&
+           abs(s.edges[1].length - s.edges[2].length) <= MARGIN_OF_ERROR &&
+           abs(s.edges[0].length - s.edges[2].length) <= MARGIN_OF_ERROR){
+    return shape::equilateral;
+  }else if(abs(s.edges[0].length - s.edges[1].length) <= MARGIN_OF_ERROR ||
+           abs(s.edges[1].length - s.edges[2].length) <= MARGIN_OF_ERROR ||
+           abs(s.edges[0].length - s.edges[2].length) <= MARGIN_OF_ERROR){
+    return shape::isosceles;
+  }else{
+    return shape::scalene;
+  }
+}
+
+//Calculate area of each triangle, in pixels, by computing the cross product
+//of two of its edges, and taking half its magnitude.
+float compute_triangle_area(shape s){
+  //int cross_x = 0;
+  //int cross_y = 0;
+  int cross_z = (s.vertices[1].x-s.vertices[0].x)*(s.vertices[2].y-s.vertices[0].y) -
+                (s.vertices[1].y-s.vertices[0].y)*(s.vertices[2].x-s.vertices[0].x);
+  //Magnitude is same as length, because x,y components are 0
+  return abs(cross_z)*0.5;
+}
 
 
