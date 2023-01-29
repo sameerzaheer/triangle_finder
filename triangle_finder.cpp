@@ -20,7 +20,7 @@ void draw_shapes(Mat image, vector<shape> shapes, bool print_edges=false){
         " Type:" + shape::triangle_type_tostring(s.triangle_type);
       putText(image, label, Point(max(min(s.average_x - 100,(int)(image.cols*0.6)),1),
                                   s.vertices[s.lowest_vertex_index].y + 30),
-              FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0,0,50));
+              FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0,0,100),2);
       cout << label << endl;
       //for (coord const &v : s.vertices){
       //  //cout << v << endl;
@@ -31,8 +31,8 @@ void draw_shapes(Mat image, vector<shape> shapes, bool print_edges=false){
         string edge_label="e" + to_string(e.index) + " Length:" + to_string((int)e.length) +
           " of t" + to_string(s.index);
         if (print_edges){
-          putText(image, edge_label, Point(e.midpoint.x - 40,e.midpoint.y),
-                  FONT_HERSHEY_SIMPLEX, 0.4, Scalar(50,0,0));
+          putText(image, edge_label, Point(e.midpoint.x - 40,e.midpoint.y - 10),
+                  FONT_HERSHEY_SIMPLEX, 0.4, Scalar(120,0,0));
         }
         cout << edge_label << endl;
       }
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     analyze_shapes(shapes, mask);
 
     //Create output image for this assignment.
-    draw_shapes(original_image,shapes, false);
+    draw_shapes(original_image,shapes, true);
     string in_file(argv[1]);
     string out_file("output_" + in_file.substr(in_file.find_last_of("/\\") + 1));
     cout << "Out file: " << out_file << endl;

@@ -168,11 +168,11 @@ edge_type classify_edge(coord pt1, coord pt2, uint8_t code, Mat image){
 
 void create_edges(shape &s){
   assert(s.vertices.size() == 3);
-  s.edges.emplace_back(0,&(s.vertices[0]),&(s.vertices[1]),
+  s.edges.emplace_back(1,&(s.vertices[0]),&(s.vertices[1]),
                        (s.vertices[0]+s.vertices[1])*0.5, s.vertices[0].dist(s.vertices[1]));
-  s.edges.emplace_back(1,&(s.vertices[1]),&(s.vertices[2]),
+  s.edges.emplace_back(2,&(s.vertices[1]),&(s.vertices[2]),
                        (s.vertices[1]+s.vertices[2])*0.5, s.vertices[1].dist(s.vertices[2]));
-  s.edges.emplace_back(2,&(s.vertices[0]),&(s.vertices[2]),
+  s.edges.emplace_back(3,&(s.vertices[0]),&(s.vertices[2]),
                        (s.vertices[0]+s.vertices[2])*0.5, s.vertices[0].dist(s.vertices[2]));
 }
 
