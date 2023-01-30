@@ -124,7 +124,6 @@ coord find_third_vertex_efficient(shape s, Mat image){
 
 // Determines if shape is a triangle by ensuring that every edge is filled
 // on one and only one side.
-
 bool is_triangle(shape s, Mat image){
   assert(s.vertices.size() >=3); //otherwise not enough info
   if (classify_edge(s.vertices[0], s.vertices[1], s.code, image) == one_filled &&
@@ -135,7 +134,7 @@ bool is_triangle(shape s, Mat image){
     return false;
   }
 }
-
+//For debugging
 vector<coord> dbg_vertices;
 
 // Given two points, determines whether the line formed by them is contains the shape
@@ -166,6 +165,7 @@ edge_type classify_edge(coord pt1, coord pt2, uint8_t code, Mat image){
   }
 }
 
+// Given a triangle, creates its vector of edges, and populates all the fields of edges.
 void create_edges(shape &s){
   assert(s.vertices.size() == 3);
   s.edges.emplace_back(1,&(s.vertices[0]),&(s.vertices[1]),

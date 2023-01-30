@@ -10,7 +10,7 @@
 using namespace cv;
 using namespace std;
 
-
+// Converts an RGB image into greyscale
 void greyscale_image(Mat input, Mat &output){
   assert(input.rows == output.rows && input.cols == output.cols);
   uint8_t* image_ptr = (uint8_t*)input.data;
@@ -29,6 +29,8 @@ void greyscale_image(Mat input, Mat &output){
   }
 }
 
+// Masks a greyscale image: pixels less than the threshold are assigned
+// value of mask_val
 void mask_threshold(Mat input, Mat mask, uint8_t threshold, uint8_t mask_val){
   assert(input.rows == mask.rows && input.cols == mask.cols);
   assert(input.channels() == 1);
@@ -43,9 +45,10 @@ void mask_threshold(Mat input, Mat mask, uint8_t threshold, uint8_t mask_val){
   }
 }
 
-/*
-  Returns the point inpaint that is farthest from c_start.
- */
+
+// Inpaints all the pixels in the input, replcing value replace_val with paint_val.
+// c_start is where the inpainting begins.
+// Returns the point inpainted that is farthest from c_start.
 coord inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
   assert(input.channels() == 1);
   assert(replace_val != paint_val);
@@ -83,18 +86,16 @@ coord inpaint(Mat input, coord c_start, uint8_t replace_val, uint8_t paint_val){
   } //end while
   return farthest_pt;
 }
-/*Segments an input mask by changing the labels of the pixels to:
- 90: for background
- 100: for the first object
- 110: for the second object, and so on.
-
- If an object is filled with background, then it is filled in with same label as its edges.
- If an object has an object inside it, then the inside object has a separate label.
- Pixel (0,0) is assumed to be background.
-
- Returns the coord anchors of each shape (at the top left hand corner).
-*/
-
+// Segments an input mask by changing the labels of the pixels to:
+// 90: for background
+// 100: for the first object
+// 110: for the second object, and so on.
+//
+// If an object is filled with background, then it is filled in with same label as its edges.
+// If an object has an object inside it, then the inside object has a separate label.
+// Pixel (0,0) is assumed to be background.
+//
+// Returns the coord anchors of each shape (at the top left hand corner).
 vector<shape> mask_segmentation(Mat input, uint8_t foreground){
   assert(input.channels() == 1);
   vector<shape> shapes;
